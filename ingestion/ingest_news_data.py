@@ -1,6 +1,7 @@
 
 def ingest_data():
-    return []
+    return 'news'
+
 
 if __name__ == '__main__':
     print(ingest_data())
