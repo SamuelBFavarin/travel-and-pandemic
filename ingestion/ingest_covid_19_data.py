@@ -78,6 +78,12 @@ class CovidIngestion:
         query_job.result()
         print("Query results loaded to the table {}".format(table_id))
 
+
+    def list_data(self):
+        table_id = f"{self.dataset_id}.covid_2020"
+        query_job = self.client.query(f" SELECT * FROM {table_id} ")
+        return query_job.result()
+
     def run_ingestion(self):
 
         table_id = f"{self.dataset_id}.covid_2020"
@@ -90,4 +96,6 @@ class CovidIngestion:
 if __name__ == '__main__':
 
     covid_ingestion = CovidIngestion()
-    covid_ingestion.run_ingestion()
+    # covid_ingestion.run_ingestion()
+
+    covid_ingestion.list_data()
