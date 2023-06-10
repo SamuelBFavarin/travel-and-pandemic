@@ -52,7 +52,7 @@ class CovidIngestion:
 
         except NotFound:
             # create dataset
-            dataset = bigquery.Dataset(f"{self.credentials.project_id}.{self.dataset_id}")
+            dataset = bigquery.Dataset(f"{self.dataset_id}")
             dataset.location = "US"
             dataset = self.client.create_dataset(dataset, timeout=30)
             print("Created dataset {}.{}".format(self.client.project, dataset.dataset_id))
