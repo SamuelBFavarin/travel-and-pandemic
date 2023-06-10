@@ -7,7 +7,7 @@ from typing import List
 class CovidIngestion:
 
     def __init__(self):
-        self.credentials: service_account.Credentials = service_account.Credentials.from_service_account_file('../secret.json')
+        self.credentials: service_account.Credentials = service_account.Credentials.from_service_account_file('../secrets/secret.json')
         self.client: bigquery.Client = bigquery.Client(credentials=self.credentials, project=self.credentials.project_id)
         self.dataset_id: str = f"{self.credentials.project_id}.raw"
 
@@ -96,6 +96,6 @@ class CovidIngestion:
 if __name__ == '__main__':
 
     covid_ingestion = CovidIngestion()
-    # covid_ingestion.run_ingestion()
 
+    # covid_ingestion.run_ingestion()
     covid_ingestion.list_data()

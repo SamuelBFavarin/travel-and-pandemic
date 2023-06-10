@@ -12,7 +12,7 @@ from ingest_covid_19_data import CovidIngestion
 class NyTimesIngestion:
 
     def __init__(self):
-        self.credentials: service_account.Credentials = service_account.Credentials.from_service_account_file('../secret.json')
+        self.credentials: service_account.Credentials = service_account.Credentials.from_service_account_file('../secrets/secret.json')
         self.client: bigquery.Client = bigquery.Client(credentials=self.credentials, project=self.credentials.project_id)
         self.dataset_id: str = f"{self.credentials.project_id}.raw"
         self.api_key: str = self._get_api_key()
@@ -20,7 +20,7 @@ class NyTimesIngestion:
 
     @staticmethod
     def _get_api_key() -> str:
-        with open('../api_secret.json') as json_file:
+        with open('../secrets/api_secret.json') as json_file:
             data = json.load(json_file)
             return data['new_york_times_api_key']
 
