@@ -9,7 +9,7 @@ from schema import Schema
 class BigQueryUtils:
 
     def __init__(self):
-        self.credentials: service_account.Credentials = service_account.Credentials.from_service_account_file('../secrets/secret.json')
+        self.credentials: service_account.Credentials = service_account.Credentials.from_service_account_file('./secrets/secret.json')
         self.client: bigquery.Client = bigquery.Client(credentials=self.credentials, project=self.credentials.project_id)
 
     def create_dataset_if_not_exists(self, dataset_id: str) -> bool:

@@ -16,7 +16,7 @@ class NyTimesIngestion:
 
     @staticmethod
     def _get_api_key() -> str:
-        with open('../secrets/api_secret.json') as json_file:
+        with open('./secrets/api_secret.json') as json_file:
             data = json.load(json_file)
             return data['new_york_times_api_key']
 

@@ -18,7 +18,7 @@ class CovidIngestion:
                 date,
                 SUM(new_confirmed) AS total_new_confirmed,
                 SUM(new_deceased) AS total_new_deceased,
-                SUM(new_persons_vaccinated) AS total_new_persons_vaccinated
+                COALESCE(SUM(new_persons_vaccinated), 0) AS total_new_persons_vaccinated
             FROM `bigquery-public-data.covid19_open_data.covid19_open_data`
             WHERE
                 country_name IN ("Spain", "Greece", "Turkey", "Italy", "Egypt", "Portugal") AND

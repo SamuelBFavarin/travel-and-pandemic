@@ -70,7 +70,8 @@ class DataTransformation:
 
     def list_data(self):
         for row in self.bigquery_utils.get_all_data(self.table_id):
-            print(row)
+            print(row.country_name, row.date, row.total_new_confirmed, row.total_new_deceased, row.total_new_persons_vaccinated,
+                    row.news_1_snippet, row.news_1_published_at, row.news_2_snippet, row.news_2_published_at, row.news_3_snippet, row.news_3_published_at)
 
     def count_data(self) -> List:
         for row in self.bigquery_utils.get_count_data(self.table_id):

@@ -1,13 +1,13 @@
 FROM python:3.10.9-slim
 
-LABEL data_pipeline all_recipes
-
-# INSTALL REQUIRED LIBS
-RUN pip install -r requirements.txt
+LABEL data_pipeline travel_covid
 
 WORKDIR /app
-COPY ./pipeline /app/
+COPY ../ /app/
 
-RUN python ingest_covid_19_data.py
-RUN python ingest_newsdata.py
-ENTRYPOINT python run_transformation.py
+# INSTALL REQUIRED LIBS
+RUN pip install -r ./infra/requirements.txt
+
+RUN python ./pipeline/ingest_covid_19_data.py
+RUN python ./pipeline/ingest_news_data.py
+ENTRYPOINT python pipeline/transform_data.py
