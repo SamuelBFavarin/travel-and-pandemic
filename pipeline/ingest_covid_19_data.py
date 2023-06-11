@@ -39,6 +39,9 @@ class CovidIngestion:
         # save records
         self.bigquery_utils.store_results_by_query(self.table_id, self._get_query())
 
+    def get_data(self):
+        return self.bigquery_utils.get_all_data(self.table_id)
+
     def list_data(self):
         for row in self.bigquery_utils.get_all_data(self.table_id):
             print(row)
@@ -46,7 +49,6 @@ class CovidIngestion:
     def count_data(self) -> List:
         for row in self.bigquery_utils.get_count_data(self.table_id):
             print(row)
-
 
 if __name__ == '__main__':
 

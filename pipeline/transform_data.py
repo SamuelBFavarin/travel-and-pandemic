@@ -1,21 +1,13 @@
-from google.cloud import bigquery
-from google.cloud.exceptions import NotFound
-from google.oauth2 import service_account
 from typing import List
-from ingest_covid_19_data import CovidIngestion
-from ingest_news_data import NyTimesIngestion
-
 from schema import Schema
-
-
+from bigquery_utils import BigQueryUtils
 
 class DataTransformation:
 
     def __init__(self):
-        self.credentials: service_account.Credentials = service_account.Credentials.from_service_account_file('../secrets/secret.json')
-        self.client: bigquery.Client = bigquery.Client(credentials=self.credentials, project=self.credentials.project_id)
-        self.dataset_id: str = f"{self.credentials.project_id}.raw"
-        self.result_dataset_id: str = f"{self.credentials.project_id}.samuel_favarin"
+        self.bigquery_utils = BigQueryUtils()
+        self.dataset_id = 'samuel_favarin'
+        self.table_id = "samuel_favarin.result"
 
     def _get_query(self) -> str:
         return f"""
@@ -28,7 +20,7 @@ class DataTransformation:
                     news.author,
                     news.word_count,
                     ROW_NUMBER() OVER (PARTITION BY news.country_name, DATE(news.published_at) ORDER BY news.published_at DESC) AS row_num
-                FROM `{self.dataset_id}.news_2020` AS news
+                FROM `raw.news_2020` AS news
             )
 
             SELECT
@@ -53,7 +45,7 @@ class DataTransformation:
                 news_3.word_count                         AS news_3_word_count,
                 news_3.published_at                       AS news_3_published_at
 
-            FROM `{self.dataset_id}.covid_2020` AS covid
+            FROM `raw.covid_2020` AS covid
             LEFT JOIN `cte_news` AS news_1
                 ON covid.country_name = news_1.country_name AND
                     covid.date = DATE(news_1.published_at) AND
@@ -68,64 +60,25 @@ class DataTransformation:
                         news_3.row_num = 3;
         """
 
-    def _create_dataset_if_not_exists(self, table_id: str):
+    def transform(self):
+        # prepare BQ
+        self.bigquery_utils.create_dataset_if_not_exists(self.dataset_id)
+        self.bigquery_utils.create_table_if_not_exists(self.table_id, Schema.get_result_schema())
 
-        try:
-            # check if table already exists
-            self.client.get_dataset(self.result_dataset_id)
-            print("Dataset {} already exists.".format(self.result_dataset_id))
-
-        except NotFound:
-            # create dataset
-            dataset = bigquery.Dataset(f"{self.result_dataset_id}")
-            dataset.location = "US"
-            dataset = self.client.create_dataset(dataset, timeout=30)
-            print("Created dataset {}.{}".format(self.client.project, self.result_dataset_id))
-
-    def _create_table_if_not_exists(self, table_id: str):
-
-        try:
-            # check if table already exists
-            self.client.get_table(table_id)
-            print("Table {} already exists.".format(table_id))
-
-        except NotFound:
-            # create table
-            table = bigquery.Table(table_id, schema=Schema.get_result_schema())
-            table = self.client.create_table(table)
-            print("Created table {}.{}.{}".format(table.project, table.dataset_id, table.table_id))
-
-    def _store_results(self, table_id: str):
-
-        # add results to table
-        job_config = bigquery.QueryJobConfig(destination=table_id, write_disposition="WRITE_TRUNCATE")
-        query_job = self.client.query(self._get_query(), job_config=job_config)
-        query_job.result()
-        print("Query results loaded to the table {}".format(table_id))
+        # save records
+        self.bigquery_utils.store_results_by_query(self.table_id, self._get_query())
 
     def list_data(self):
-        table_id = f"{self.result_dataset_id}.result"
-        query_job = self.client.query(f" SELECT COUNT(*) FROM {table_id} ")
-        return query_job.result()
+        for row in self.bigquery_utils.get_all_data(self.table_id):
+            print(row)
 
-    def transform(self):
-
-        table_id = f"{self.result_dataset_id}.result"
-
-        self._create_dataset_if_not_exists(table_id)
-        self._create_table_if_not_exists(table_id)
-        self._store_results(table_id)
-
-
-
+    def count_data(self) -> List:
+        for row in self.bigquery_utils.get_count_data(self.table_id):
+            print(row)
 
 if __name__ == "__main__":
 
-    covid_client = CovidIngestion()
-    ny_client = NyTimesIngestion()
-
     client = DataTransformation()
     client.transform()
-
-    for row in client.list_data():
-        print(f"{row.country_name}, {row.date}, {row.news_1_published_at}, {row.news_2_published_at}, {row.news_3_published_at}")
+    client.list_data()
+    client.count_data()
