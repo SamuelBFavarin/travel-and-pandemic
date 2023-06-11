@@ -9,6 +9,9 @@ from datetime import datetime
 from typing import List, Set
 from ingest_covid_19_data import CovidIngestion
 
+from schema import Schema
+
+
 class NyTimesIngestion:
 
     def __init__(self):
@@ -23,18 +26,6 @@ class NyTimesIngestion:
         with open('../secrets/api_secret.json') as json_file:
             data = json.load(json_file)
             return data['new_york_times_api_key']
-
-    @staticmethod
-    def _get_schema() -> List[bigquery.SchemaField]:
-        return [
-            bigquery.SchemaField("country_name", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("abstract", "STRING"),
-            bigquery.SchemaField("snippet", "STRING"),
-            bigquery.SchemaField("author", "STRING"),
-            bigquery.SchemaField("word_count", "INTEGER"),
-            bigquery.SchemaField("published_at", "DATETIME", mode="REQUIRED"),
-            bigquery.SchemaField("created_at", "DATETIME", mode="REQUIRED")
-        ]
 
     def _filter_news_by_labels(self, news: List[dict], country: str, subject: str = 'tourism') -> List[dict]:
         return [n for n in news if country.lower() in json.dumps(n).lower() and (subject.lower() in json.dumps(n).lower() or 'travel' in json.dumps(n).lower())]
@@ -74,7 +65,7 @@ class NyTimesIngestion:
         self.client.delete_table(table_id, not_found_ok=True)
 
         # create table
-        table = bigquery.Table(table_id, schema=self._get_schema())
+        table = bigquery.Table(table_id, schema=Schema.get_news_york_times_schema())
         table = self.client.create_table(table)
         print("Created table {}.{}.{}".format(table.project, table.dataset_id, table.table_id))
 

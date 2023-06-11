@@ -5,6 +5,9 @@ from typing import List
 from ingest_covid_19_data import CovidIngestion
 from ingest_news_data import NyTimesIngestion
 
+from schema import Schema
+
+
 
 class DataTransformation:
 
@@ -13,32 +16,6 @@ class DataTransformation:
         self.client: bigquery.Client = bigquery.Client(credentials=self.credentials, project=self.credentials.project_id)
         self.dataset_id: str = f"{self.credentials.project_id}.raw"
         self.result_dataset_id: str = f"{self.credentials.project_id}.samuel_favarin"
-
-    @staticmethod
-    def _get_schema() -> List[bigquery.SchemaField]:
-        return  [
-            bigquery.SchemaField("country_name", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("date", "DATE", mode="REQUIRED"),
-            bigquery.SchemaField("total_new_confirmed", "INTEGER"),
-            bigquery.SchemaField("total_new_deceased", "INTEGER"),
-            bigquery.SchemaField("total_new_persons_vaccinated", "INTEGER"),
-            bigquery.SchemaField("news_1_abstract", "STRING"),
-            bigquery.SchemaField("news_1_snippet", "STRING"),
-            bigquery.SchemaField("news_1_author", "STRING"),
-            bigquery.SchemaField("news_1_word_count", "STRING"),
-            bigquery.SchemaField("news_1_published_at", "STRING"),
-            bigquery.SchemaField("news_2_abstract", "STRING"),
-            bigquery.SchemaField("news_2_snippet", "STRING"),
-            bigquery.SchemaField("news_2_author", "STRING"),
-            bigquery.SchemaField("news_2_word_count", "STRING"),
-            bigquery.SchemaField("news_2_published_at", "STRING"),
-            bigquery.SchemaField("news_3_abstract", "STRING"),
-            bigquery.SchemaField("news_3_snippet", "STRING"),
-            bigquery.SchemaField("news_3_author", "STRING"),
-            bigquery.SchemaField("news_3_word_count", "STRING"),
-            bigquery.SchemaField("news_3_published_at", "STRING")
-        ]
-
 
     def _get_query(self) -> str:
         return f"""
@@ -114,7 +91,7 @@ class DataTransformation:
 
         except NotFound:
             # create table
-            table = bigquery.Table(table_id, schema=self._get_schema())
+            table = bigquery.Table(table_id, schema=Schema.get_result_schema())
             table = self.client.create_table(table)
             print("Created table {}.{}.{}".format(table.project, table.dataset_id, table.table_id))
 

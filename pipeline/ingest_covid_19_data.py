@@ -1,29 +1,16 @@
-from google.cloud import bigquery
-from google.cloud.exceptions import NotFound
-from google.oauth2 import service_account
 from typing import List
-
+from schema import Schema
+from bigquery_utils import BigQueryUtils
 
 class CovidIngestion:
 
     def __init__(self):
-        self.credentials: service_account.Credentials = service_account.Credentials.from_service_account_file('../secrets/secret.json')
-        self.client: bigquery.Client = bigquery.Client(credentials=self.credentials, project=self.credentials.project_id)
-        self.dataset_id: str = f"{self.credentials.project_id}.raw"
+        self.bigquery_utils = BigQueryUtils()
+        self.table_id = "raw.covid_2020"
+        self.dataset_id = 'raw'
 
     @staticmethod
-    def _get_schema() -> List[bigquery.SchemaField]:
-        return  [
-            bigquery.SchemaField("country_name", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("country_code", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("date", "DATE", mode="REQUIRED"),
-            bigquery.SchemaField("total_new_confirmed", "INTEGER"),
-            bigquery.SchemaField("total_new_deceased", "INTEGER"),
-            bigquery.SchemaField("total_new_persons_vaccinated", "INTEGER"),
-        ]
-
-    @staticmethod
-    def _get_ingestion_query() -> str:
+    def _get_query() -> str:
         return """
             SELECT
                 country_name,
@@ -43,59 +30,27 @@ class CovidIngestion:
             ORDER BY date;
         """
 
-    def _create_dataset_if_not_exists(self, table_id: str):
-
-        try:
-            # check if table already exists
-            self.client.get_dataset(self.dataset_id)
-            print("Dataset {} already exists.".format(self.dataset_id))
-
-        except NotFound:
-            # create dataset
-            dataset = bigquery.Dataset(f"{self.dataset_id}")
-            dataset.location = "US"
-            dataset = self.client.create_dataset(dataset, timeout=30)
-            print("Created dataset {}.{}".format(self.client.project, dataset.dataset_id))
-
-    def _create_table_if_not_exists(self, table_id: str):
-
-        try:
-            # check if table already exists
-            self.client.get_table(table_id)
-            print("Table {} already exists.".format(table_id))
-
-        except NotFound:
-            # create table
-            table = bigquery.Table(table_id, schema=self._get_schema())
-            table = self.client.create_table(table)
-            print("Created table {}.{}.{}".format(table.project, table.dataset_id, table.table_id))
-
-    def _store_results(self, table_id: str):
-
-        # add results to table
-        job_config = bigquery.QueryJobConfig(destination=table_id, write_disposition="WRITE_TRUNCATE")
-        query_job = self.client.query(self._get_ingestion_query(), job_config=job_config)
-        query_job.result()
-        print("Query results loaded to the table {}".format(table_id))
-
-
-    def list_data(self):
-        table_id = f"{self.dataset_id}.covid_2020"
-        query_job = self.client.query(f" SELECT * FROM {table_id} ")
-        return query_job.result()
-
     def run_ingestion(self):
 
-        table_id = f"{self.dataset_id}.covid_2020"
+        # prepare BQ
+        self.bigquery_utils.create_dataset_if_not_exists(self.dataset_id)
+        self.bigquery_utils.create_table_if_not_exists(self.table_id, Schema.get_covid_19_schema())
 
-        self._create_dataset_if_not_exists(table_id)
-        self._create_table_if_not_exists(table_id)
-        self._store_results(table_id)
+        # save records
+        self.bigquery_utils.store_results_by_query(self.table_id, self._get_query())
+
+    def list_data(self):
+        for row in self.bigquery_utils.get_all_data(self.table_id):
+            print(row)
+
+    def count_data(self) -> List:
+        for row in self.bigquery_utils.get_count_data(self.table_id):
+            print(row)
 
 
 if __name__ == '__main__':
 
     covid_ingestion = CovidIngestion()
-
-    # covid_ingestion.run_ingestion()
+    covid_ingestion.run_ingestion()
     covid_ingestion.list_data()
+    covid_ingestion.count_data()
