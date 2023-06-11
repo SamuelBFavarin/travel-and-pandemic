@@ -36,7 +36,7 @@ This project is structured into several folders to organize the different parts 
 
 This diagram illustrates the architecture of this project.
 
--- image here
+![enter image description here](https://github.com/SamuelBFavarin/travel-and-pandemic/blob/main/doc/architecture.jpg?raw=true)
 
 ## How to execute
 
