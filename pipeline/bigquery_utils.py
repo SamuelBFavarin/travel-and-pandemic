@@ -12,36 +12,29 @@ class BigQueryUtils:
         self.credentials: service_account.Credentials = service_account.Credentials.from_service_account_file('./secrets/secret.json')
         self.client: bigquery.Client = bigquery.Client(credentials=self.credentials, project=self.credentials.project_id)
 
-    def create_dataset_if_not_exists(self, dataset_id: str) -> bool:
+    def create_dataset_if_not_exists(self, dataset_id: str):
         try:
             self.client.get_dataset(dataset_id)
             print("Dataset {} already exists.".format(dataset_id))
-            return True
         except NotFound:
-            try:
-                dataset = bigquery.Dataset(f"{dataset_id}")
-                dataset.location = "US"
-                dataset = self.client.create_dataset(dataset, timeout=30)
-                print("Created dataset {}.{}".format(self.client.project, dataset_id))
-            except:
-                return False
+            dataset = bigquery.Dataset(f"{self.credentials.project_id}.{dataset_id}")
+            dataset.location = "US"
+            dataset = self.client.create_dataset(dataset, timeout=30)
+            print("Created dataset {}.{}".format(self.client.project, dataset_id))
 
-    def create_table_if_not_exists(self, table_id: str, schema: Schema) -> bool:
+    def create_table_if_not_exists(self, table_id: str, schema: Schema):
         try:
             # check if table already exists
             self.client.get_table(table_id)
             print("Table {} already exists.".format(table_id))
         except NotFound:
-            try:
-                # create table
-                table = bigquery.Table(table_id, schema=schema)
-                table = self.client.create_table(table)
-                print("Created table {}.{}.{}".format(table.project, table.dataset_id, table.table_id))
-            except:
-                False
+            # create table
+            table = bigquery.Table(f"{self.credentials.project_id}.{table_id}", schema=schema)
+            table = self.client.create_table(table)
+            print("Created table {}.{}.{}".format(table.project, table.dataset_id, table.table_id))
+
 
     def recreate_table(self, table_id: str, schema: Schema) -> bool:
-        print(f"{self.credentials.project_id}.{table_id}")
         try:
             self.client.delete_table(f"{self.credentials.project_id}.{table_id}", not_found_ok=True)
             table = bigquery.Table(f"{self.credentials.project_id}.{table_id}", schema=schema)
@@ -86,3 +79,22 @@ class BigQueryUtils:
     def get_count_data(self, table_id: str) -> List:
         query_job = self.client.query(f" SELECT COUNT(1) AS total FROM {table_id} ")
         return query_job.result()
+
+    def drop_model(self, table_id: str):
+        self.client.delete_table(f"{self.credentials.project_id}.{table_id}", not_found_ok=True)
+
+    def drop_dataset(self, dataset_id: str):
+        self.client.delete_dataset(dataset_id, delete_contents=True, not_found_ok=True)
+
+
+if __name__ == '__main__':
+    client = BigQueryUtils()
+
+    # clear tables
+    #client.drop_model('raw.covid_2020')
+    #client.drop_model('raw.news_2020')
+    #client.drop_model('samuel_favarin.result')
+
+    # clear dataset
+    #client.drop_dataset('raw')
+    #client.drop_dataset('samuel_favarin')
